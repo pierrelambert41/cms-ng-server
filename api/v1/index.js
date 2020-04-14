@@ -39,7 +39,9 @@ const storage = multer.diskStorage({
             if (err) {
                 return callback(err);
             }
-            callback(null, raw.toString('hex') + path.extname(file.originalname));
+            //callback(null, raw.toString('hex') + path.extname(file.originalname));
+            lastUploadedImageName = raw.toString('hex') + path.extname(file.originalname);
+            callback(null, lastUploadedImageName);
         });
     }
 });
@@ -47,7 +49,7 @@ const storage = multer.diskStorage({
 const upload =  multer({storage: storage});
 
 // file upload 
-router.post('/blog-posts/images', upload.single('blogimage'), (req, res) => {
+router.post('/blog-posts/images', upload.single('image'), (req, res) => {
     if (!req.file.originalname.match(/\.(jpg|jpg|png|gif)$/)) {
         return res.status(400).json({ msg: 'only image file please'});
     }
@@ -56,7 +58,7 @@ router.post('/blog-posts/images', upload.single('blogimage'), (req, res) => {
 
 router.post('/blog-posts', (req, res) => {
     console.log('req.body', req.body);
-    const blogPost = new Blogpost(req.body);
+    const blogPost = new Blogpost({...req.body, image: lastUploadedImageName});
     blogPost.save((err, blogPost) => {
         if (err) {
             return res.status(500).json(err);
@@ -64,6 +66,8 @@ router.post('/blog-posts', (req, res) => {
         res.status(201).json(blogPost);
     });
 });
+
+let lastUploadedImageName = '';
 
 router.delete('/blog-posts/:id', (req, res) => {
     const id = req.params.id;
